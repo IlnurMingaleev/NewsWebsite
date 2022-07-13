@@ -8,20 +8,27 @@ using System.IO;
 using Newtonsoft.Json;
 using UnityEngine.UI;
 using System.Threading.Tasks;
-//using SimpleJSON;
-//using System.Linq;
+using System.Threading;
+using System.Linq;
+
 
 public class ApiManager : MonoBehaviour
-{ 
+{
+    [SerializeField] private string category;
+    [SerializeField] private string questionTag;
     // Api Settings fields
     private const string URL = "https://newsdata.io/api/1/news";
     private const string YOUR_API_KEY = "pub_910824786fe1d1aa9974a71bf8ff1599e8fd";
-    private const string COUNTRY = "ca";
-    private const string CATEGORY = "technology";
+    private const string COUNTRY = "ca,au,us,se,hk";
+   // private const string CATEGORY = "technology";
     private const string LANGUAGE = "en";
+
+
+    private string mainRequest;
+
     
     // build the url and query
-    private string request =  string.Format("{0}?apikey={1}&country={2}&category={3}&language={4}", URL, YOUR_API_KEY, COUNTRY, CATEGORY, LANGUAGE);
+    [SerializeField] private string request;
    
     // Articles from Api response json as C# object
     public List<Results> articles { get; set; }
@@ -35,46 +42,97 @@ public class ApiManager : MonoBehaviour
     private List<Texture2D> textureList;
     private List<Sprite> spriteList;
 
-    async void Awake()
+    private string pathToJsonFile = @"D:\Documents\GameDev\Application\NewsWebsite\NewsWebsite\Assets\JSON Response\response.json";
+
+    private RootObject APIResults;
+
+    private string result;
+    public string Category 
     {
+        get 
+        {
+            return category;
+        }
+        set 
+        {
+            category = value;
+        }
+    }
+    public string Request 
+    {
+        get 
+        {
+            return request;
+        }
+
+        set 
+        {
+            request = value;
+        }
+    }
+    public string MainRequest
+    {
+        get
+        {
+            return mainRequest;
+        }
+
+        set
+        {
+            mainRequest = value;
+        }
+    }
+    public string QuestionTag
+    {
+        get
+        {
+            return questionTag;
+        }
+
+        set
+        {
+            questionTag = value;
+        }
+    }
+    void Start()
+     {
         ui = GetComponent<UIManager>();
-       
-        // Make Api GET request to NewsApi server
+        mainRequest = string.Format("{0}?apikey={1}&country={2}&language={3}", URL, YOUR_API_KEY, COUNTRY, LANGUAGE);
+        request = mainRequest;
+     }
 
-        //StartCoroutine(GetData(request));
+    public void MakeRequest() 
+    {
 
-
-        // JSON deserealization to objects
-
-        articles = GetResults();
-
-        //Get Images from the internet
+        StartCoroutine(GetData(request));//(1)
         
-        StartCoroutine(DownloadImage(articles[1].image_url, 0));
-        StartCoroutine(DownloadImage(articles[5].image_url, 1));
-        //StartCoroutine(DownloadImage(articles[1].image_url, 2));
-
-
     }
 
-   
 
     // IEnumerator for Couroutine
     IEnumerator DownloadImage(string MediaUrl, int indexOfImage)
     {
         if (MediaUrl != null)
         {
+
             UnityWebRequest request = UnityWebRequestTexture.GetTexture(MediaUrl);
             yield return request.SendWebRequest();
-            if (request.isNetworkError || request.isHttpError)
-                Debug.Log(request.error);
-            else
+            switch (request.result)
             {
-                // ImageComponent.texture = ((DownloadHandlerTexture) request.downloadHandler).texture;
+                case UnityWebRequest.Result.ConnectionError:
+                case UnityWebRequest.Result.DataProcessingError:
+                    Debug.LogError(": Error: " + request.error);
+                    break;
+                case UnityWebRequest.Result.ProtocolError:
+                    Debug.LogError(": HTTP Error: " + request.error);
+                    break;
+                case UnityWebRequest.Result.Success:
+                    Texture2D tex = ((DownloadHandlerTexture)request.downloadHandler).texture;
+                    Sprite sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(tex.width / 2, tex.height / 2));
+                    ui.ImageList[indexOfImage].GetComponent<Image>().overrideSprite = sprite;
+                    Debug.Log(":\nReceived: " + request.downloadHandler.text);
+                    break;
 
-                Texture2D tex = ((DownloadHandlerTexture)request.downloadHandler).texture;
-                Sprite sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(tex.width / 2, tex.height / 2));
-                ui.ImageList[indexOfImage].GetComponent<Image>().overrideSprite = sprite;
             }
         }
     }
@@ -101,21 +159,43 @@ public class ApiManager : MonoBehaviour
                 Debug.LogError(": HTTP Error: " + webReq.error);
                 break;
             case UnityWebRequest.Result.Success:
-                Debug.Log(":\nReceived: " + webReq.downloadHandler.text);
+                result = webReq.downloadHandler.text;
+
+                File.WriteAllText(pathToJsonFile, result);
+
+                APIResults = JsonConvert.DeserializeObject<RootObject>(result);
+
+                articles = APIResults.results;
+
+                ArticleSortByImage();
+
+                DownloadImages();
+
+                ui.FillDataToUI();
+
+                Debug.Log(":\nReceived: " + result);
+
                 break;
 
         }
-        File.WriteAllText(@"D:\Documents\GameDev\Application\NewsWebsite\NewsWebsite\Assets\JSON Response\response.json", webReq.downloadHandler.text);
+        
     }
 
-    //Read JSON Response from json file.
-    private List<Results> GetResults() 
+    private void DownloadImages() 
     {
-        //File.ReadAllText(@"D:\Documents\GameDev\Application\NewsWebsite\NewsWebsite\Assets\JSON Response\response.json"
-        RootObject APIResults = JsonConvert.DeserializeObject<RootObject>(File.ReadAllText(@"D:\Documents\GameDev\Application\NewsWebsite\NewsWebsite\Assets\JSON Response\response.json"));
-        return APIResults.results;
-
+        for(int i = 0; i < 10; i++ ) 
+        {
+            StartCoroutine(DownloadImage(articles[i].image_url, i));
+        }
+    
     }
-  
+    public void ArticleSortByImage()
+    {
+        articles = (from f in articles
+                    orderby f.image_url descending
+                   select f).ToList<Results>();
+    }
+
+
 }
 
