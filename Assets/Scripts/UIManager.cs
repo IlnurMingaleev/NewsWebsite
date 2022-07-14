@@ -63,15 +63,20 @@ public class UIManager : MonoBehaviour
     
     }
 
+    // Back button on screen of application.
+
     public void BackButton() 
     {
         SceneManager.LoadScene("SampleScene");
         buttonText.text = "Next";
         buttonImage.GetComponent<Image>().overrideSprite = next;
     }
+
+    // Next button on screen of application.
+
     public void NextButton() 
     {
-        //Filling Containers With News
+        //Make API request
         apiManager.MakeRequest();
         
         imageList[0].rectTransform.sizeDelta = new Vector2(600, 300); // Change Image Size
@@ -79,21 +84,22 @@ public class UIManager : MonoBehaviour
         buttonText.text = "Back";
         buttonImage.GetComponent<Image>().overrideSprite = back;
     }
+    // Function for filling UI elements with response data
     public void FillDataToUI() 
     {
         for (int i = 0; i < 10; i++)
         {
-            categories[i].text = apiManager.articles[i].category[0].ToUpper();
-            string tempStr = apiManager.articles[i].title;
+            categories[i].text = apiManager.Articles[i].category[0].ToUpper();
+            string tempStr = apiManager.Articles[i].title;
             titles[i].text = CutString.TruncateLongString(tempStr, 40) + "...";
 
         }
     }
-    
+    // Buttons in first scroll view
     public void ScrollButton(Button button) 
     {
 
-        apiManager.QuestionTag = button.transform.GetChild(0).GetComponent<TextMeshProUGUI>().text.ToLower().Substring(1);
+        apiManager.QuestionTag = button.transform.GetChild(0).GetComponent<TextMeshProUGUI>().text.ToLower()[1..];
         apiManager.Request = string.Format( "{0}&q={1}",apiManager.MainRequest,apiManager.QuestionTag);
         Debug.Log(apiManager.Request);
     }

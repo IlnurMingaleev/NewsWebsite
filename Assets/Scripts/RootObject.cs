@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class RootObject : MonoBehaviour
 {
-    public string status { get; set; }
-    public int totalResults { get; set; }
-    public List<Results> results { get; set; }
+    public string Status { get; set; }
+    public int TotalResults { get; set; }
+    public List<Results> Results { get; set; }
 }
