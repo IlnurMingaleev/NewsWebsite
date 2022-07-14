@@ -112,12 +112,25 @@ public class ApiManager : MonoBehaviour
 
 
     // IEnumerator for Couroutine
-    IEnumerator DownloadImage(string MediaUrl, int indexOfImage)
+    IEnumerator GetData(string MediaUrl, bool isImage = false, int index = 0)
     {
+        UnityWebRequest request;
         if (MediaUrl != null)
         {
+            if (isImage)
+            {
+                 request = UnityWebRequestTexture.GetTexture(MediaUrl);
+            }
+            else 
+            {
+                request = new()
+                {
+                    downloadHandler = new DownloadHandlerBuffer(),
 
-            UnityWebRequest request = UnityWebRequestTexture.GetTexture(MediaUrl);
+                    url = MediaUrl
+                };
+
+            }
             yield return request.SendWebRequest();
             switch (request.result)
             {
@@ -129,52 +142,66 @@ public class ApiManager : MonoBehaviour
                     Debug.LogError(": HTTP Error: " + request.error);
                     break;
                 case UnityWebRequest.Result.Success:
-                    Texture2D tex = ((DownloadHandlerTexture)request.downloadHandler).texture;
-                    Sprite sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(tex.width / 2, tex.height / 2));
-                    ui.ImageList[indexOfImage].GetComponent<Image>().overrideSprite = sprite;
-                    Debug.Log(":\nReceived: " + request.downloadHandler.text);
+                    result = request.downloadHandler.text;
+                    if (isImage)
+                    {
+                        Texture2D tex = ((DownloadHandlerTexture)request.downloadHandler).texture;
+                        SuccessActionsImage(tex, index);
+                    }
+                    else 
+                    {
+                        SuccessActionsArticles(result);
+                    }
+                    
+                    Debug.Log(":\nReceived: " + result);
                     break;
 
             }
         }
     }
     // sends an API request - returns a JSON file
-    IEnumerator GetData(string request)
+    /*   IEnumerator GetData(string request)
+       {
+
+           // create the web request and download handler
+           UnityWebRequest webReq = new()
+           {
+               downloadHandler = new DownloadHandlerBuffer(),
+
+               url = request
+           };
+           // send the web request and wait for a returning result
+           yield return webReq.SendWebRequest();
+
+           // Check WebRequest results
+           switch (webReq.result)
+           {
+               case UnityWebRequest.Result.ConnectionError:
+               case UnityWebRequest.Result.DataProcessingError:
+                   Debug.LogError(": Error: " + webReq.error);
+                   break;
+               case UnityWebRequest.Result.ProtocolError:
+                   Debug.LogError(": HTTP Error: " + webReq.error);
+                   break;
+               case UnityWebRequest.Result.Success:
+                   result = webReq.downloadHandler.text;
+                   SuccessActions(result);
+                   Debug.Log(":\nReceived: " + result);
+
+                   break;
+
+           }
+
+       }*/
+    //Perform Operations with loaded images
+    private void SuccessActionsImage(Texture2D texture, int index) 
     {
-
-        // create the web request and download handler
-        UnityWebRequest webReq = new()
-        {
-            downloadHandler = new DownloadHandlerBuffer(),
-
-            url = request
-        };
-        // send the web request and wait for a returning result
-        yield return webReq.SendWebRequest();
-
-        // Check WebRequest results
-        switch (webReq.result)
-        {
-            case UnityWebRequest.Result.ConnectionError:
-            case UnityWebRequest.Result.DataProcessingError:
-                Debug.LogError(": Error: " + webReq.error);
-                break;
-            case UnityWebRequest.Result.ProtocolError:
-                Debug.LogError(": HTTP Error: " + webReq.error);
-                break;
-            case UnityWebRequest.Result.Success:
-                result = webReq.downloadHandler.text;
-                SuccessActions(result);
-                Debug.Log(":\nReceived: " + result);
-
-                break;
-
-        }
-
+        
+        Sprite sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(texture.width / 2, texture.height / 2));
+        ui.ImageList[index].GetComponent<Image>().overrideSprite = sprite;
     }
-
     //Perform Operations if API request is succesful
-    private void SuccessActions(string result) 
+    private void SuccessActionsArticles(string result) 
     {
         File.WriteAllText(pathToJsonFile, result); // Write result response to a json file
 
@@ -194,7 +221,7 @@ public class ApiManager : MonoBehaviour
     {
         for(int i = 0; i < 10; i++ ) 
         {
-            StartCoroutine(DownloadImage(Articles[i].image_url, i));
+            StartCoroutine(GetData(Articles[i].image_url, true, i));
         }
     
     }
