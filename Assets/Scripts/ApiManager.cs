@@ -159,40 +159,7 @@ public class ApiManager : MonoBehaviour
             }
         }
     }
-    // sends an API request - returns a JSON file
-    /*   IEnumerator GetData(string request)
-       {
-
-           // create the web request and download handler
-           UnityWebRequest webReq = new()
-           {
-               downloadHandler = new DownloadHandlerBuffer(),
-
-               url = request
-           };
-           // send the web request and wait for a returning result
-           yield return webReq.SendWebRequest();
-
-           // Check WebRequest results
-           switch (webReq.result)
-           {
-               case UnityWebRequest.Result.ConnectionError:
-               case UnityWebRequest.Result.DataProcessingError:
-                   Debug.LogError(": Error: " + webReq.error);
-                   break;
-               case UnityWebRequest.Result.ProtocolError:
-                   Debug.LogError(": HTTP Error: " + webReq.error);
-                   break;
-               case UnityWebRequest.Result.Success:
-                   result = webReq.downloadHandler.text;
-                   SuccessActions(result);
-                   Debug.Log(":\nReceived: " + result);
-
-                   break;
-
-           }
-
-       }*/
+    
     //Perform Operations with loaded images
     private void SuccessActionsImage(Texture2D texture, int index) 
     {
